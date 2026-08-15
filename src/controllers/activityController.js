@@ -73,7 +73,7 @@ exports.getFollowUps = async (req, res, next) => {
     const where = {
       scheduled_at: { [Op.ne]: null },
       type: { [Op.in]: ['call', 'email', 'meeting', 'whatsapp', 'task'] },
-      outcome: outcome === 'completed' ? 'completed' : 'pending',
+      outcome: outcome === 'completed' ? 'completed' : { [Op.in]: ['pending', 'follow_up'] },
     };
     if (type) where.type = type;
     // Agents only see their own follow-ups; admins/managers see all.
@@ -151,7 +151,7 @@ exports.getUpcoming = async (req, res, next) => {
     const { Op } = require('sequelize');
     const where = {
       user_id: req.user.id,
-      outcome: 'pending',
+      outcome: { [Op.in]: ['pending', 'follow_up'] },
       scheduled_at: { [Op.gte]: new Date() },
     };
     const tasks = await LeadActivity.findAll({

@@ -61,8 +61,26 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 sequelize.authenticate()
-  .then(() => {
+  .then(async () => {
     logger.info('Database connected');
+    // Ensure the 'follow_up' ENUM value exists (PostgreSQL sync does not add new ENUM values).
+    try {
+      await sequelize.query(
+        `DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_enum e
+            JOIN pg_type t ON t.oid = e.enumtypid
+            WHERE t.typname = 'enum_lead_activities_outcome'
+              AND e.enumlabel = 'follow_up'
+          ) THEN
+            ALTER TYPE "enum_lead_activities_outcome" ADD VALUE 'follow_up';
+          END IF;
+        END $$;`
+      );
+    } catch (e) {
+      logger.warn('Could not add follow_up to ENUM:', e.message);
+    }
     app.listen(PORT, () => logger.info(`Server running on port ${PORT}`));
   })
   .catch((err) => {
