@@ -1,5 +1,5 @@
 const { Notification } = require('../models');
-const { success, paginated } = require('../utils/response');
+const { success } = require('../utils/response');
 
 exports.getAll = async (req, res, next) => {
   try {
@@ -14,9 +14,18 @@ exports.getAll = async (req, res, next) => {
       order: [['created_at', 'DESC']],
     });
     const unreadCount = await Notification.count({ where: { user_id: req.user.id, is_read: false } });
-    paginated(res, rows, count, page, limit, 'Notifications fetched');
-    // Append unread count — override response
-    res.locals.unreadCount = unreadCount;
+    res.status(200).json({
+      success: true,
+      message: 'Notifications fetched',
+      data: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(count / parseInt(limit)),
+      },
+      unreadCount,
+    });
   } catch (err) { next(err); }
 };
 
