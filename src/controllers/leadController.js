@@ -17,12 +17,20 @@ exports.getAll = async (req, res, next) => {
     // Agents only see their own leads
     if (req.user.role === 'agent') where.assigned_to = req.user.id;
 
-    if (search) where[Op.or] = [
-      { title: { [Op.iLike]: `%${search}%` } },
-      { contact_name: { [Op.iLike]: `%${search}%` } },
-      { contact_email: { [Op.iLike]: `%${search}%` } },
-      { company_name: { [Op.iLike]: `%${search}%` } },
-    ];
+    if (search) {
+      const phoneSearch = search.replace(/\D/g, '')
+      const phoneConditions = [{ contact_phone: { [Op.iLike]: `%${search}%` } }]
+      if (phoneSearch && phoneSearch !== search) {
+        phoneConditions.push({ contact_phone: { [Op.iLike]: `%${phoneSearch}%` } })
+      }
+      where[Op.or] = [
+        { title: { [Op.iLike]: `%${search}%` } },
+        { contact_name: { [Op.iLike]: `%${search}%` } },
+        { contact_email: { [Op.iLike]: `%${search}%` } },
+        { company_name: { [Op.iLike]: `%${search}%` } },
+        ...phoneConditions,
+      ]
+    }
     if (status) where.status = status;
     if (priority) where.priority = priority;
     if (source) where.source = source;
