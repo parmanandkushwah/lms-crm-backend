@@ -64,7 +64,7 @@ sequelize.authenticate()
   .then(async () => {
     logger.info('Database connected');
     // Sync models (creates/updates tables including join tables)
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: false });
     // Ensure the 'follow_up' ENUM value exists (PostgreSQL sync does not add new ENUM values).
     try {
       await sequelize.query(
