@@ -1,5 +1,5 @@
 const { Op, fn, col } = require('sequelize');
-const { Lead, Invoice, User, LeadActivity } = require('../models');
+const { Lead, User, LeadActivity } = require('../models');
 const { success } = require('../utils/response');
 
 exports.leadsReport = async (req, res, next) => {
@@ -28,38 +28,41 @@ exports.leadsReport = async (req, res, next) => {
 exports.revenueReport = async (req, res, next) => {
   try {
     const { from, to } = req.query;
-    const where = {};
+    const leadWhere = { status: 'won' };
     if (from || to) {
-      where.issue_date = {};
-      if (from) where.issue_date[Op.gte] = new Date(from);
-      if (to) where.issue_date[Op.lte] = new Date(to);
+      leadWhere.actual_close_date = {};
+      if (from) leadWhere.actual_close_date[Op.gte] = new Date(from);
+      if (to) leadWhere.actual_close_date[Op.lte] = new Date(to);
     }
+    if (req.user.role === 'agent') leadWhere.assigned_to = req.user.id;
 
-    const [invoices, byStatus, monthly] = await Promise.all([
-      Invoice.findAll({
-        where,
-        include: [{ model: Lead, as: 'lead', attributes: ['id', 'title', 'contact_name'] }],
-        order: [['issue_date', 'DESC']],
+    const [wonLeads, monthly] = await Promise.all([
+      Lead.findAll({
+        where: leadWhere,
+        include: [{ model: User, as: 'assignee', attributes: ['id', 'name', 'email'] }],
+        order: [['actual_close_date', 'DESC']],
       }),
-      Invoice.findAll({
-        where,
-        attributes: ['status', [fn('SUM', col('total')), 'total'], [fn('COUNT', col('id')), 'count']],
-        group: ['status'],
-        raw: true,
-      }),
-      Invoice.findAll({
-        where,
+      Lead.findAll({
+        where: leadWhere,
         attributes: [
-          [fn('DATE_TRUNC', 'month', col('issue_date')), 'month'],
-          [fn('SUM', col('total')), 'total'],
-          [fn('SUM', col('paid_amount')), 'paid'],
+          [fn('DATE_TRUNC', 'month', col('actual_close_date')), 'month'],
+          [fn('SUM', col('estimated_value')), 'total'],
+          [fn('COUNT', col('id')), 'count'],
         ],
-        group: [fn('DATE_TRUNC', 'month', col('issue_date'))],
-        order: [[fn('DATE_TRUNC', 'month', col('issue_date')), 'ASC']],
+        group: [fn('DATE_TRUNC', 'month', col('actual_close_date'))],
+        order: [[fn('DATE_TRUNC', 'month', col('actual_close_date')), 'ASC']],
         raw: true,
       }),
     ]);
-    success(res, { data: { invoices, byStatus, monthly } });
+
+    const responseData = monthly.map(d => ({
+      month: d.month,
+      total: d.total,
+      count: d.count,
+      paid: d.total,
+    }));
+
+    success(res, { data: { invoices: wonLeads, byStatus: [], monthly: responseData } });
   } catch (err) { next(err); }
 };
 

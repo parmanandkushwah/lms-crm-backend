@@ -168,9 +168,11 @@ async function seed() {
       for (const l of reportLeadsData) {
         const createdAt = monthsAgo(l.monthsAgo);
         const { monthsAgo: _drop, ...leadFields } = l;
+        const defaults = { ...leadFields, createdAt, updatedAt: createdAt };
+        if (l.status === 'won') defaults.actual_close_date = createdAt;
         const [lead] = await Lead.findOrCreate({
           where: { title: l.title },
-          defaults: { ...leadFields, createdAt, updatedAt: createdAt },
+          defaults,
         });
         createdReportLeads.push(lead);
         await Contact.findOrCreate({
