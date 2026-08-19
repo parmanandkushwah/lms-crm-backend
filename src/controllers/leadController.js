@@ -45,6 +45,18 @@ exports.getAll = async (req, res, next) => {
     const { rows, count } = await Lead.findAndCountAll({
       where,
       include: LEAD_INCLUDE,
+      attributes: {
+        include: [
+          [Lead.sequelize.literal(`(
+            SELECT la.scheduled_at FROM lead_activities la
+            WHERE la.lead_id = "Lead".id
+              AND la.outcome = 'follow_up'
+              AND la.scheduled_at > NOW()
+            ORDER BY la.scheduled_at ASC
+            LIMIT 1
+          )`), 'next_follow_date'],
+        ],
+      },
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit),
       order: [['created_at', 'DESC']],
