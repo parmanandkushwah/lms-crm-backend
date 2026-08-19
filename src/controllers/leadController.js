@@ -73,7 +73,12 @@ exports.getOne = async (req, res, next) => {
 
 exports.create = async (req, res, next) => {
   try {
-    const lead = await Lead.create({ ...req.body, created_by: req.user.id });
+    const leadData = { ...req.body, created_by: req.user.id };
+    // Agents auto-assign to themselves when creating leads
+    if (req.user.role === 'agent' && !leadData.assigned_to) {
+      leadData.assigned_to = req.user.id;
+    }
+    const lead = await Lead.create(leadData);
     if (lead.assigned_to && lead.assigned_to !== req.user.id)
       await notifyLeadAssigned(lead.assigned_to, lead.title, lead.id);
     await audit(req, 'CREATE', 'Lead', lead.id, null, lead.toJSON(), `Created lead: ${lead.title}`);
