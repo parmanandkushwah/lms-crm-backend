@@ -50,7 +50,7 @@ exports.getAll = async (req, res, next) => {
           [Lead.sequelize.literal(`(
             SELECT la.scheduled_at FROM lead_activities la
             WHERE la.lead_id = "Lead".id
-              AND la.outcome = 'follow_up'
+              AND la.outcome IN ('pending', 'follow_up')
               AND la.scheduled_at > NOW()
             ORDER BY la.scheduled_at ASC
             LIMIT 1
