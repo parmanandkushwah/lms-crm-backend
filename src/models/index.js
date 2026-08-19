@@ -3,6 +3,7 @@ const sequelize = require('../config/database');
 const User             = require('./User');
 const Lead             = require('./Lead');
 const LeadActivity     = require('./LeadActivity');
+const LeadAssignee     = require('./LeadAssignee');
 const LeadFile         = require('./LeadFile');
 const LeadStatusHistory = require('./LeadStatusHistory');
 const Contact          = require('./Contact');
@@ -26,6 +27,8 @@ User.hasMany(AuditLog,     { foreignKey: 'user_id', as: 'auditLogs' });
 // ─── Lead associations ────────────────────────────────────────────────────────
 Lead.belongsTo(User, { foreignKey: 'assigned_to', as: 'assignee' });
 Lead.belongsTo(User, { foreignKey: 'created_by',  as: 'creator' });
+Lead.belongsToMany(User, { through: LeadAssignee, foreignKey: 'lead_id', as: 'assignees' });
+User.belongsToMany(Lead, { through: LeadAssignee, foreignKey: 'user_id', as: 'assignedToLeads' });
 Lead.hasMany(LeadActivity,     { foreignKey: 'lead_id', as: 'activities',     onDelete: 'CASCADE' });
 Lead.hasMany(LeadFile,         { foreignKey: 'lead_id', as: 'files',          onDelete: 'CASCADE' });
 Lead.hasMany(LeadStatusHistory,{ foreignKey: 'lead_id', as: 'statusHistory',  onDelete: 'CASCADE' });
@@ -88,6 +91,7 @@ module.exports = {
   User,
   Lead,
   LeadActivity,
+  LeadAssignee,
   LeadFile,
   LeadStatusHistory,
   Contact,

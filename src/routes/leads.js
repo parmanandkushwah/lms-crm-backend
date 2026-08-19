@@ -27,7 +27,12 @@ router.patch('/:id/status',
 );
 router.patch('/:id/assign',
   authorize('admin', 'manager'),
-  [body('assigned_to').isInt()], validate,
+  [body('assigned_to').optional().custom(v => {
+    if (typeof v === 'number') return true;
+    if (typeof v === 'string') return /^\d+$/.test(v);
+    if (Array.isArray(v)) return v.every(x => typeof x === 'number' || /^\d+$/.test(x));
+    return false;
+  }).withMessage('assigned_to must be an integer or array of integers'), validate],
   ctrl.assign
 );
 router.delete('/:id', authorize('admin', 'manager'), ctrl.delete);
