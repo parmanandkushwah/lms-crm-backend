@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { body } = require('express-validator');
-const ctrl = require('../controllers/invoiceController');
+const ctrl = require('../controllers/purchaseController');
 const { authenticate, authorize } = require('../middlewares/auth');
 const validate = require('../middlewares/validate');
 
@@ -10,13 +10,14 @@ router.get('/', ctrl.getAll);
 router.get('/items', ctrl.getItems);
 router.get('/:id', ctrl.getOne);
 router.post('/',
-  [body('lead_id').isInt(), body('title').notEmpty()], validate,
+  [body('supplier_name').notEmpty(), body('bill_number').notEmpty(), body('bill_date').isDate()],
+  validate,
   ctrl.create
 );
 router.put('/:id', ctrl.update);
-router.post('/:id/send', ctrl.send);
 router.post('/:id/payment',
-  [body('amount').isNumeric()], validate,
+  [body('amount').isNumeric()],
+  validate,
   ctrl.recordPayment
 );
 router.patch('/:id/cancel', authorize('admin', 'manager'), ctrl.cancel);

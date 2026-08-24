@@ -25,7 +25,15 @@ const buildItems = (items) =>
     const discount = parseFloat(item.discount_value || 0);
     const base = qty * price - discount;
     const taxAmount = (base * taxRate) / 100;
-    return { ...item, quantity: qty, unit_price: price, tax_amount: taxAmount, total: base + taxAmount, sort_order: idx };
+    return {
+      ...item,
+      product_id: item.product_id ? parseInt(item.product_id) : null,
+      quantity: qty,
+      unit_price: price,
+      tax_amount: taxAmount,
+      total: base + taxAmount,
+      sort_order: idx,
+    };
   });
 
 exports.getAll = async (req, res, next) => {

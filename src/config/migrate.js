@@ -32,7 +32,8 @@ async function migrate() {
     console.log('✅ All tables created/updated successfully');
     console.log('   Tables: users, leads, lead_activities, lead_assignees, lead_files, lead_status_history,');
     console.log('           contacts, products, quotations, quotation_items,');
-    console.log('           invoices, invoice_items, notifications, audit_logs');
+    console.log('           invoices, invoice_items, purchases, purchase_items,');
+    console.log('           notifications, audit_logs');
     process.exit(0);
   } catch (err) {
     console.error('❌ Migration failed:', err.message);

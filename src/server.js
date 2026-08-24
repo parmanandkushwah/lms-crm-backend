@@ -41,6 +41,8 @@ app.use('/api/leads',         require('./routes/leads'));
 app.use('/api/products',      require('./routes/products'));
 app.use('/api/quotations',    require('./routes/quotations'));
 app.use('/api/invoices',      require('./routes/invoices'));
+app.use('/api/purchases',     require('./routes/purchases'));
+app.use('/api/financial-reports', require('./routes/financialReports'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/dashboard',     require('./routes/dashboard'));
 app.use('/api/tasks',         require('./routes/tasks'));

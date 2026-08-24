@@ -12,6 +12,8 @@ const Quotation        = require('./Quotation');
 const QuotationItem    = require('./QuotationItem');
 const Invoice          = require('./Invoice');
 const InvoiceItem      = require('./InvoiceItem');
+const Purchase         = require('./Purchase');
+const PurchaseItem     = require('./PurchaseItem');
 const Notification     = require('./Notification');
 const AuditLog         = require('./AuditLog');
 const Document         = require('./Document');
@@ -56,6 +58,7 @@ Contact.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 Product.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 Product.hasMany(QuotationItem, { foreignKey: 'product_id', as: 'quotationItems' });
 Product.hasMany(InvoiceItem,   { foreignKey: 'product_id', as: 'invoiceItems' });
+Product.hasMany(PurchaseItem,  { foreignKey: 'product_id', as: 'purchaseItems' });
 
 // ─── Quotation associations ───────────────────────────────────────────────────
 Quotation.belongsTo(Lead, { foreignKey: 'lead_id',    as: 'lead' });
@@ -76,6 +79,14 @@ Invoice.hasMany(InvoiceItem, { foreignKey: 'invoice_id',   as: 'items', onDelete
 // ─── InvoiceItem associations ─────────────────────────────────────────────────
 InvoiceItem.belongsTo(Invoice, { foreignKey: 'invoice_id', as: 'invoice' });
 InvoiceItem.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+
+// ─── Purchase associations ───────────────────────────────────────────────────
+Purchase.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+Purchase.hasMany(PurchaseItem, { foreignKey: 'purchase_id', as: 'items', onDelete: 'CASCADE' });
+
+// ─── PurchaseItem associations ───────────────────────────────────────────────
+PurchaseItem.belongsTo(Purchase, { foreignKey: 'purchase_id', as: 'purchase' });
+PurchaseItem.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 
 // ─── Notification associations ────────────────────────────────────────────────
 Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -100,6 +111,8 @@ module.exports = {
   QuotationItem,
   Invoice,
   InvoiceItem,
+  Purchase,
+  PurchaseItem,
   Notification,
   AuditLog,
   Document,

@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { sequelize, User, Product, Lead, Contact, Invoice, InvoiceItem } = require('../models');
+const { sequelize, User, Product, Lead, Contact, Invoice, InvoiceItem, Purchase, PurchaseItem } = require('../models');
 const { generateInvoiceNumber } = require('../utils/numberGenerator');
 
 async function seed() {
@@ -220,6 +220,48 @@ async function seed() {
         });
         await InvoiceItem.bulkCreate(built.map(i => ({ ...i, invoice_id: inv.id, description: '', unit: 'piece' })));
         console.log(`✅ Invoice: ${invoiceNumber} (${issueDate.toISOString().slice(0, 7)}) - ${spec.status}`);
+      }
+    }
+
+    // ─── Purchases ─────────────────────────────────────────────────────────────
+    const purchaseData = [
+      { supplier: 'TechDistributors Ltd', gstin: '27AABCT1234F1ZH', bill: 'TD-2024-001', monthsAgo: 8, status: 'paid', paidRatio: 1, items: [{ name: 'Enterprise Plan License', qty: 5, price: 8000, tax: 18 }, { name: 'Setup Service', qty: 1, price: 4000, tax: 18 }] },
+      { supplier: 'CloudHost India', gstin: '29AABCH5678G2ZI', bill: 'CH-2024-045', monthsAgo: 7, status: 'paid', paidRatio: 1, items: [{ name: 'Annual Support Package', qty: 1, price: 10000, tax: 18 }] },
+      { supplier: 'DevTools Solutions', gstin: '27AABCD9012H3ZJ', bill: 'DT-2024-112', monthsAgo: 5, status: 'paid', paidRatio: 1, items: [{ name: 'Custom Module Development', qty: 2, price: 12000, tax: 18 }] },
+      { supplier: 'DataCenter Pro', gstin: '29AABCP3456I4ZK', bill: 'DC-2024-078', monthsAgo: 3, status: 'received', paidRatio: 0, items: [{ name: 'Pro Plan License', qty: 10, price: 2400, tax: 18 }, { name: 'Training Materials', qty: 5, price: 2000, tax: 18 }] },
+      { supplier: 'SecureNet Services', gstin: '27AABCS7890J5ZL', bill: 'SN-2024-023', monthsAgo: 1, status: 'partially_paid', paidRatio: 0.5, items: [{ name: 'Security Audit', qty: 1, price: 15000, tax: 18 }] },
+    ];
+
+    const lastPurchaseTitle = purchaseData[purchaseData.length - 1].bill;
+    const alreadySeededPurchases = await Purchase.findOne({ where: { bill_number: lastPurchaseTitle } });
+    if (alreadySeededPurchases) {
+      console.log('ℹ️  Purchase demo data already present, skipping');
+    } else {
+      for (const spec of purchaseData) {
+        const billDate = monthsAgo(spec.monthsAgo);
+        let subtotal = 0;
+        let taxAmount = 0;
+        const items = spec.items.map((it, idx) => {
+          const base = it.qty * it.price;
+          const tax = (base * it.tax) / 100;
+          subtotal += base;
+          taxAmount += tax;
+          return { ...it, unit_price: it.price, tax_rate: it.tax, tax_amount: tax, total: base + tax, sort_order: idx };
+        });
+        const total = subtotal + taxAmount;
+        const paid = total * spec.paidRatio;
+        const balance = total - paid;
+        const paymentStatus = paid >= total ? 'paid' : paid > 0 ? 'partial' : 'unpaid';
+
+        const p = await Purchase.create({
+          supplier_name: spec.supplier, supplier_gstin: spec.gstin,
+          bill_number: spec.bill, bill_date: billDate, due_date: addDays(billDate, 30),
+          status: spec.status, payment_status: paymentStatus,
+          subtotal, tax_amount: taxAmount, total, paid_amount: paid, balance_due: balance,
+          currency: 'INR', created_by: admin.id,
+        });
+        await PurchaseItem.bulkCreate(items.map(i => ({ ...i, purchase_id: p.id })));
+        console.log(`✅ Purchase: ${spec.bill} (${billDate.toISOString().slice(0, 7)}) - ${spec.status}`);
       }
     }
 

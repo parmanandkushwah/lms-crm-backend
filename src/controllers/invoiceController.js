@@ -1,4 +1,4 @@
-const { Invoice, InvoiceItem, Lead, User, Quotation } = require('../models');
+const { Invoice, InvoiceItem, Lead, User, Quotation, Product } = require('../models');
 const { success, created } = require('../utils/response');
 const { generateInvoiceNumber } = require('../utils/numberGenerator');
 const { sendInvoice } = require('../services/emailService');
@@ -25,11 +25,19 @@ const buildItems = (items) =>
     const discount = parseFloat(item.discount_value || 0);
     const base = qty * price - discount;
     const taxAmount = (base * taxRate) / 100;
-    return { ...item, quantity: qty, unit_price: price, tax_amount: taxAmount, total: base + taxAmount, sort_order: idx };
+    return {
+      ...item,
+      product_id: item.product_id ? parseInt(item.product_id) : null,
+      quantity: qty,
+      unit_price: price,
+      tax_amount: taxAmount,
+      total: base + taxAmount,
+      sort_order: idx,
+    };
   });
 
 const INCLUDE = [
-  { model: InvoiceItem, as: 'items', order: [['sort_order', 'ASC']] },
+  { model: InvoiceItem, as: 'items', order: [['sort_order', 'ASC']], include: [{ model: Product, as: 'product' }] },
   { model: Lead, as: 'lead', attributes: ['id', 'title', 'contact_name', 'contact_email', 'company_name', 'address', 'city', 'state', 'pincode'] },
   { model: User, as: 'creator', attributes: ['id', 'name', 'email'] },
 ];
@@ -48,7 +56,7 @@ exports.getByLead = async (req, res, next) => {
 exports.getAll = async (req, res, next) => {
   try {
     const { Op } = require('sequelize');
-    const { page = 1, limit = 20, status, from, to } = req.query;
+    const { page = 1, limit = 20, status, from, to, search } = req.query;
     const where = {};
     if (status) where.status = status;
     if (from || to) {
@@ -56,9 +64,17 @@ exports.getAll = async (req, res, next) => {
       if (from) where.issue_date[Op.gte] = from;
       if (to) where.issue_date[Op.lte] = to;
     }
+    if (search) {
+      where[Op.or] = [
+        { invoice_number: { [Op.iLike]: `%${search}%` } },
+        { title: { [Op.iLike]: `%${search}%` } },
+        { '$lead.contact_name$': { [Op.iLike]: `%${search}%` } },
+        { '$lead.company_name$': { [Op.iLike]: `%${search}%` } },
+      ];
+    }
     const { rows, count } = await Invoice.findAndCountAll({
       where,
-      include: [{ model: Lead, as: 'lead', attributes: ['id', 'title', 'contact_name'] }],
+      include: [{ model: Lead, as: 'lead', attributes: ['id', 'title', 'contact_name', 'company_name'] }],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit),
       order: [['created_at', 'DESC']],
@@ -74,6 +90,17 @@ exports.getOne = async (req, res, next) => {
     const inv = await Invoice.findByPk(req.params.id, { include: INCLUDE });
     if (!inv) return res.status(404).json({ success: false, message: 'Invoice not found' });
     success(res, { data: inv });
+  } catch (err) { next(err); }
+};
+
+exports.getItems = async (req, res, next) => {
+  try {
+    const items = await InvoiceItem.findAll({
+      include: [{ model: Product, as: 'product' }],
+      order: [['created_at', 'DESC']],
+      limit: 100,
+    });
+    success(res, { data: items });
   } catch (err) { next(err); }
 };
 
