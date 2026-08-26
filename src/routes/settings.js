@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { authenticate } = require('../middlewares/auth');
 const companyCtrl = require('../controllers/companySettingsController');
+const nonGstCtrl = require('../controllers/nonGstSettingsController');
 const appearanceCtrl = require('../controllers/appearanceSettingsController');
 const notificationCtrl = require('../controllers/notificationSettingsController');
 const securityCtrl = require('../controllers/securitySettingsController');
@@ -10,6 +11,9 @@ router.use(authenticate);
 
 router.get('/company', companyCtrl.getCompanySettings);
 router.put('/company', companyCtrl.updateCompanySettings);
+
+router.get('/non-gst', nonGstCtrl.getNonGstSettings);
+router.put('/non-gst', nonGstCtrl.updateNonGstSettings);
 
 router.get('/appearance', appearanceCtrl.getAppearanceSettings);
 router.put('/appearance', appearanceCtrl.updateAppearanceSettings);

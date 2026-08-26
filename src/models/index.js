@@ -14,6 +14,7 @@ const Invoice          = require('./Invoice');
 const InvoiceItem      = require('./InvoiceItem');
 const Purchase         = require('./Purchase');
 const PurchaseItem     = require('./PurchaseItem');
+const NonGstBill        = require('./NonGstBill');
 const Notification     = require('./Notification');
 const AuditLog         = require('./AuditLog');
 const Document         = require('./Document');
@@ -89,7 +90,10 @@ PurchaseItem.belongsTo(Purchase, { foreignKey: 'purchase_id', as: 'purchase' });
 PurchaseItem.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 
 // ─── Notification associations ────────────────────────────────────────────────
-Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+  // ─── NonGstBill associations ───────────────────────────────────────────────────
+  NonGstBill.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
 // ─── AuditLog associations ────────────────────────────────────────────────────
 AuditLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -117,4 +121,5 @@ module.exports = {
   AuditLog,
   Document,
   Settings,
+  NonGstBill,
 };

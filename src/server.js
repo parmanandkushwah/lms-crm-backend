@@ -51,6 +51,7 @@ app.use('/api/calendar',      require('./routes/calendar'));
 app.use('/api/audit-logs',    require('./routes/auditLogs'));
 app.use('/api/documents',     require('./routes/documents'));
 app.use('/api/settings',      require('./routes/settings'));
+app.use('/api/non-gst-bills',  require('./routes/nonGstBills'));
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
