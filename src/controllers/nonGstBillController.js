@@ -69,3 +69,31 @@ exports.delete = async (req, res, next) => {
     success(res, null, 'Bill deleted');
   } catch (err) { next(err); }
 };
+
+exports.update = async (req, res, next) => {
+  const t = await sequelize.transaction();
+  try {
+    const bill = await NonGstBill.findByPk(req.params.id, { transaction: t });
+    if (!bill) { await t.rollback(); return error(res, 'Bill not found', 404); }
+
+    const { customer_name, customer_address, customer_mobile, customer_email, items, total_amount, notes, bill_date } = req.body;
+    if (!customer_name) { await t.rollback(); return error(res, 'Customer name is required', 400); }
+
+    await bill.update({
+      customer_name,
+      customer_address,
+      customer_mobile,
+      customer_email,
+      items: items || [],
+      total_amount: total_amount || 0,
+      notes,
+      bill_date: bill_date || bill.bill_date,
+    }, { transaction: t });
+
+    await t.commit();
+    success(res, { data: bill }, 'Bill updated');
+  } catch (err) {
+    await t.rollback();
+    next(err);
+  }
+};
