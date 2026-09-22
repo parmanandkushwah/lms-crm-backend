@@ -7,8 +7,11 @@ exports.create = async (req, res, next) => {
     const { customer_name, customer_address, customer_mobile, customer_email, items, total_amount, notes, bill_date } = req.body;
     if (!customer_name) return error(res, 'Customer name is required', 400);
 
-    const count = await NonGstBill.count({ transaction: t });
-    const bill_number = `BILL-${String(count + 1).padStart(4, '0')}`;
+    const [[sequenceRow]] = await sequelize.query(
+      "SELECT nextval('non_gst_bills_bill_number_seq') AS number",
+      { transaction: t }
+    );
+    const bill_number = `BILL-${String(sequenceRow.number).padStart(4, '0')}`;
 
     const bill = await NonGstBill.create({
       bill_number,

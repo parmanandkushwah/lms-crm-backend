@@ -68,6 +68,32 @@ sequelize.authenticate()
     logger.info('Database connected');
     // Sync models (creates/updates tables including join tables)
     await sequelize.sync({ alter: false });
+    await sequelize.query(`
+      CREATE SEQUENCE IF NOT EXISTS non_gst_bills_bill_number_seq;
+      SELECT setval(
+        'non_gst_bills_bill_number_seq',
+        GREATEST(
+          COALESCE((SELECT last_value FROM non_gst_bills_bill_number_seq), 1),
+          COALESCE((SELECT MAX(NULLIF(regexp_replace(bill_number, '[^0-9]', '', 'g'), '')::BIGINT) FROM non_gst_bills), 0),
+          1
+        ),
+        COALESCE((SELECT MAX(NULLIF(regexp_replace(bill_number, '[^0-9]', '', 'g'), '')::BIGINT) FROM non_gst_bills), 0) > 0
+          OR (SELECT last_value FROM non_gst_bills_bill_number_seq) > 1
+      );
+    `);
+    await sequelize.query(`
+      CREATE SEQUENCE IF NOT EXISTS invoices_invoice_number_seq;
+      SELECT setval(
+        'invoices_invoice_number_seq',
+        GREATEST(
+          COALESCE((SELECT last_value FROM invoices_invoice_number_seq), 1),
+          COALESCE((SELECT MAX(NULLIF(regexp_replace(invoice_number, '^.*-', ''), '')::BIGINT) FROM invoices), 0),
+          1
+        ),
+        COALESCE((SELECT MAX(NULLIF(regexp_replace(invoice_number, '^.*-', ''), '')::BIGINT) FROM invoices), 0) > 0
+          OR (SELECT last_value FROM invoices_invoice_number_seq) > 1
+      );
+    `);
     // Ensure the 'follow_up' ENUM value exists (PostgreSQL sync does not add new ENUM values).
     try {
       await sequelize.query(
